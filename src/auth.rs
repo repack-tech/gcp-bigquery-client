@@ -14,19 +14,25 @@ pub struct ServiceAccountAuthenticator {
     is_using_workload_identity: bool,
 }
 
+const EMULATOR: &str = "EMULATOR";
+
 impl ServiceAccountAuthenticator {
     /// Returns an access token.
     pub async fn access_token(&self) -> Result<String, BQError> {
         let token = if self.is_using_workload_identity {
             get_access_token_with_workload_identity().await?.access_token
         } else {
-            self.auth
-                .clone()
-                .unwrap()
-                .token(self.scopes.as_ref())
-                .await?
-                .as_str()
-                .to_string()
+            if self.auth.is_none() {
+                EMULATOR.to_string()
+            } else {
+                self.auth
+                    .clone()
+                    .unwrap()
+                    .token(self.scopes.as_ref())
+                    .await?
+                    .as_str()
+                    .to_string()
+            }
         };
         Ok(token)
     }
@@ -35,15 +41,19 @@ impl ServiceAccountAuthenticator {
         sa_key: ServiceAccountKey,
         scopes: &[&str],
     ) -> Result<ServiceAccountAuthenticator, BQError> {
+        let token_uri = sa_key.token_uri.clone();
         let auth = yup_oauth2::ServiceAccountAuthenticator::builder(sa_key).build().await;
 
         match auth {
             Err(err) => Err(BQError::InvalidServiceAccountAuthenticator(err)),
-            Ok(auth) => Ok(ServiceAccountAuthenticator {
-                auth: Some(Arc::new(auth)),
-                scopes: scopes.iter().map(|scope| scope.to_string()).collect(),
-                is_using_workload_identity: false,
-            }),
+            Ok(auth) => {
+                let auth_inner = if token_uri.contains(EMULATOR) { None } else { Some(Arc::new(auth)) };
+                Ok(ServiceAccountAuthenticator {
+                    auth: auth_inner,
+                    scopes: scopes.iter().map(|scope| scope.to_string()).collect(),
+                    is_using_workload_identity: false,
+                })
+            }
         }
     }
 
