@@ -98,6 +98,18 @@ impl TableFieldSchema {
         }
     }
 
+    pub fn json(field_name: &str) -> Self {
+        Self {
+            categories: None,
+            description: None,
+            fields: None,
+            mode: None,
+            name: field_name.into(),
+            policy_tags: None,
+            r#type: FieldType::Json,
+        }
+    }
+
     pub fn bytes(field_name: &str) -> Self {
         Self {
             categories: None,
