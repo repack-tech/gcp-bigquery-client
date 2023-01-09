@@ -26,6 +26,9 @@ pub enum BQError {
     #[error("No data available. The result set is positioned before the first or after the last row. Try to call the method next on your result set.")]
     NoDataAvailable,
 
+    #[error("No token")]
+    NoToken,
+
     #[error("Invalid column index (col_index: {col_index})")]
     InvalidColumnIndex { col_index: usize },
 

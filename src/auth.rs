@@ -28,9 +28,9 @@ impl ServiceAccountAuthenticator {
                 self.auth
                     .clone()
                     .unwrap()
-                    .token(self.scopes.as_ref())
-                    .await?
-                    .as_str()
+                    .token(self.scopes.as_ref()).await?
+                    .token()
+                    .ok_or(BQError::NoToken)?
                     .to_string()
             }
         };
